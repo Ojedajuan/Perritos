@@ -1,6 +1,6 @@
 import tkinter as tk
 import os
-from Perros.vista import Frame, barrita_menu
+from Perros.vista import Frame
 
 def main():
     ventana = tk.Tk()
@@ -12,7 +12,7 @@ def main():
     except Exception as e:
         print(f"Icono no establecido: {e}")
         
-    barrita_menu(ventana)
+ 
 
 
 

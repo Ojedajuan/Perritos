@@ -2,8 +2,8 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 from tkcalendar import DateEntry
 from datetime import date
-from modelo.consultas import (
-    crear_tabla, Perros, listar_perros, listar_dueños, 
+from modelo.consultas import  (
+    crear_tabla, Perros, listar_perros,
     guardar_perros, update_perro, eliminar_perros,
 )
 
@@ -16,7 +16,6 @@ class Frame(tk.Frame):
         self.config(bg='#E6F2FF')
         self.create_form()
         self.create_buttons()
-        self.create_menu()
         self.mostrar_tabla()
 
     # (Otros métodos...)
@@ -33,9 +32,9 @@ class Frame(tk.Frame):
             if len(valores) < 4: raise ValueError("Error: El registro seleccionado no tiene todos los valores necesarios.")
             
             # Rellenar los campos del formulario con los valores del registro seleccionado
-            self.entry_fecha_ingreso.set_date(valores[0])
-            self.entry_color.delete(0, tk.END)
-            self.entry_color.insert(0, valores[1])
+            self.entry_Fecha_ingreso.set_date(valores[0])
+            self.entry_Color.delete(0, tk.END)
+            self.entry_Color.insert(0, valores[1])
             
             # Establecer el estado en el combobox
             estado_index = self.estados.index(valores[2]) if valores[2] in self.estados else 0
@@ -57,9 +56,12 @@ class Frame(tk.Frame):
 
     def create_form(self):
         """Crea el formulario para ingresar datos."""
-        dueño_db = listar_dueños()
-        self.estados = ["Seleccione uno", "disponible", "adoptado", "no adoptado",]
 
+        self.estados = ["Seleccione uno", "disponible", "adoptado", "no adoptado",]
+        x =self.estados
+        y=[]
+        for i in x:
+            y.append(i[1])
         self.form_frame = tk.Frame(self, bg='#E6F2FF')
         self.form_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
         self.form_frame.grid_columnconfigure(1, weight=1)
@@ -103,15 +105,7 @@ class Frame(tk.Frame):
                 fg="white", font=("Arial", 10, "bold"), relief="solid", borderwidth=2
             ).grid(row=0, column=col, padx=5, pady=5, sticky="ew")
 
-    def create_menu(self):
-        """Crea la barra de menú."""
-        barra = tk.Menu(self.root)
-        self.root.config(menu=barra)
-
-        inicio = tk.Menu(barra, tearoff=0)
-        barra.add_cascade(label='Inicio', menu=inicio)
-        inicio.add_command(label='Conectar DB', command=crear_tabla)
-        inicio.add_command(label='Salir', command=self.root.destroy)
+    
 
     def nuevo_registro(self):
         self.clear_fields()
@@ -180,7 +174,7 @@ class Frame(tk.Frame):
                 if update_perro(perro):  # Usar la función importada
                     messagebox.showinfo("Éxito", "Registro actualizado correctamente")
                 else:
-                    messagebox.showerror("Error", "No se pudo actualizar el registro")
+                    messagebox.showerror("Error", "Nº   o se pudo actualizar el registro")
             else:
                 # Si es un nuevo registro
                 guardar_perros(perro)
@@ -211,7 +205,11 @@ class Frame(tk.Frame):
             messagebox.showerror("Error", f"Error al eliminar: {e}")
 
     def validar_campos(self):
-        if not self.entry_fecha_ingreso.get() or not self.entry_color.get() or not self.entry_nombre.get() or self.entry_estado.current() == 0:
+        if (not self.entry_fecha_ingreso.get() or 
+            not self.entry_color.get() or 
+            not self.entry_nombre.get() or 
+            self.entry_estado.current() == 0):
+            
             messagebox.showwarning("Advertencia", "Todos los campos son obligatorios")
             return False
         return True
@@ -220,7 +218,7 @@ class Frame(tk.Frame):
         for widget in self.winfo_children():
             if isinstance(widget, ttk.Treeview):
                 widget.destroy()
-
+        self.lista_p=listar_perros()
         self.tabla = ttk.Treeview(self, columns=('ID_Perro','fecha_ingreso', 'color', 'estado', 'nombre'), height=8)
         self.tabla.grid(row=4, column=0, columnspan=4, padx=10, pady=10)
         self.tabla.heading('#0', text='ID_Perro', anchor='center')

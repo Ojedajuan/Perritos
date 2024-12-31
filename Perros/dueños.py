@@ -7,8 +7,8 @@ from modelo.consultas import guardar_dueno,listar_duenos,actualizar_dueno,elimin
 
 class duenos:
     """Clase que representa un dueno de mascota."""
-    def __init__(self, nombre_apellido, dni, email, telefono, fecha_adopcion, id_perro, id_duenos=None):
-        self.id_duenos = id_duenos
+    def __init__(self, nombre_apellido, dni, email, telefono, fecha_adopcion, id_perro, id_dueno=None):
+        self.id_dueno = id_dueno
         self.nombre_apellido = nombre_apellido
         self.dni = dni
         self.email = email

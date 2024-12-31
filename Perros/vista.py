@@ -2,10 +2,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 from tkcalendar import DateEntry
 from datetime import date
-from modelo.consultas import  (
-    crear_tabla, Perros, listar_perros,
-    guardar_perros, update_perro, eliminar_perros,
-)
+from modelo.consultas import crear_tabla
 
 class Frame(tk.Frame):
     def __init__(self, root=None):  

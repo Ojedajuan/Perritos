@@ -2,7 +2,8 @@ import tkinter as tk
 import os
 import sys
 from tkinter import messagebox
-from Perros.vista import Frame, crear_tabla
+from modelo.consultas import crear_tablas
+from Perros.dueños import FrameDuenos
 
 class MenuInicio:
     def __init__(self, root):
@@ -35,7 +36,7 @@ class MenuInicio:
         # Botones del menú
         botones = [
             ("Gestionar Perros", self.abrir_gestion_perros),
-            ("Gestionar Dueños", self.abrir_gestion_duenos),
+            ("Gestionar duenos", self.abrir_gestion_duenos),
             ("Realizar Adopción", self.abrir_adopcion),
             ("Salir", self.salir)
         ]
@@ -58,18 +59,31 @@ class MenuInicio:
     def abrir_gestion_perros(self):
         self.root.withdraw()  # Ocultar ventana de inicio
         ventana_perros = tk.Toplevel(self.root)
+        FrameDuenos(ventana_perros)
         ventana_perros.title("Gestión de Perros")
         ventana_perros.geometry("600x700")
-        
-        frame_perros = Frame(ventana_perros)
+    def abrir_gestion_duenos(self):
+        self.root.withdraw()
+        ventana_duenos = tk.Toplevel(self.root)
+        FrameDuenos(ventana_duenos)
+        ventana_duenos.title("Gestión de Dueños")
+        ventana_duenos.geometry("600x700")
+        ventana_duenos.configure(bg='#E6F2FF')
+        try:
+            img_dir = r'C:\Users\WINDOWS_10\Desktop\Perritos\img'
+            icon_path = os.path.join(img_dir, 'favicon.ico')
+            ventana_duenos.iconbitmap(icon_path)
+        except Exception as e:
+            print(f"Error al establecer el icono: {e}")
+    
         
         def volver_menu():
-            ventana_perros.destroy()
+            ventana_duenos.destroy()
             self.root.deiconify()
         
         # Botón de volver al menú principal
         boton_volver = tk.Button(
-            ventana_perros, 
+            ventana_duenos, 
             text="Volver al Menú", 
             command=volver_menu, 
             bg="#1E88E5", 
@@ -77,8 +91,6 @@ class MenuInicio:
         )
         boton_volver.pack(side=tk.BOTTOM, pady=10)
 
-    def abrir_gestion_duenos(self):
-        messagebox.showinfo("En Desarrollo", "Funcionalidad de gestión de dueños próximamente.")
 
     def abrir_adopcion(self):
         messagebox.showinfo("En Desarrollo", "Funcionalidad de adopción próximamente.")
@@ -90,10 +102,12 @@ class MenuInicio:
 
 def main():
     root = tk.Tk()
-    
+    root.title("Menú de Inicio")
+    root.geometry("500x400")
+    root.configure(bg='#E6F2FF')
+
     # Crear tablas al iniciar la aplicación
-    crear_tabla()
-    
+    crear_tablas()
     app = MenuInicio(root)
     root.mainloop()
 

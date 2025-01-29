@@ -1,8 +1,11 @@
 import tkinter as tk
+import sys
+print (sys.path)
 from tkinter import messagebox, ttk
 from tkcalendar import DateEntry
 from datetime import date
-from modelo.consultas import crear_tabla
+from modelo.consultas import Perros
+from modelo.consultas import listar_perros, guardar_perros,actualizar_perro, eliminar_perro, crear_tablas
 
 class Frame(tk.Frame):
     def __init__(self, root=None):  
@@ -50,6 +53,9 @@ class Frame(tk.Frame):
             messagebox.showerror("Error", "No se ha seleccionado ningún registro.")
         except ValueError as error:
             messagebox.showerror("Error", str(error))
+        if len(valores) < 4:
+            messagebox.showerror("Error", "El registro seleccionado no tiene todos los valores necesarios.")
+            return
 
     def create_form(self):
         """Crea el formulario para ingresar datos."""
@@ -159,19 +165,21 @@ class Frame(tk.Frame):
         try:
             if not self.validar_campos():
                 return
+                
             estado = self.estados[self.entry_estado.current()]
             perro = Perros(
                 fecha_ingreso=self.entry_fecha_ingreso.get(),
                 color=self.entry_color.get(),
                 estado=estado,
-                nombre=self.entry_nombre.get())
+                nombre=self.entry_nombre.get()
+            )
             
             if self.Id_Perro:
                 perro.id_perros = self.Id_Perro
-                if update_perro(perro):  # Usar la función importada
+                if actualizar_perro(perro):
                     messagebox.showinfo("Éxito", "Registro actualizado correctamente")
                 else:
-                    messagebox.showerror("Error", "Nº   o se pudo actualizar el registro")
+                    messagebox.showerror("Error", "No se pudo actualizar el registro")
             else:
                 # Si es un nuevo registro
                 guardar_perros(perro)
@@ -180,9 +188,9 @@ class Frame(tk.Frame):
             self.mostrar_tabla()
             self.clear_fields()
             self.Id_Perro = None  # Reiniciar el ID de perro
-        
+            
         except Exception as e:
-            messagebox.showerror("Error", f"Error al guardar: {e}")
+            messagebox.showerror("Error", f"Error al guardar datos en la base de datos: {e}")
 
     def delete_data(self):
         try:
@@ -194,7 +202,7 @@ class Frame(tk.Frame):
 
             confirmar = messagebox.askyesno("Confirmar", "¿Está seguro de eliminar este registro?")
             if confirmar:
-                eliminar_perros(self.Id_Perro)  # Función externa importada
+                eliminar_perro(self.Id_Perro)  # Función externa importada
                 messagebox.showinfo("Éxito", "Registro eliminado correctamente")
                 self.mostrar_tabla()
                 self.tabla.update()
@@ -202,12 +210,17 @@ class Frame(tk.Frame):
             messagebox.showerror("Error", f"Error al eliminar: {e}")
 
     def validar_campos(self):
-        if (not self.entry_fecha_ingreso.get() or 
-            not self.entry_color.get() or 
-            not self.entry_nombre.get() or 
-            self.entry_estado.current() == 0):
-            
-            messagebox.showwarning("Advertencia", "Todos los campos son obligatorios")
+        if not self.entry_fecha_ingreso.get():
+            messagebox.showwarning("Advertencia", "La fecha de ingreso es obligatoria")
+            return False
+        if not self.entry_color.get():
+            messagebox.showwarning("Advertencia", "El color es obligatorio")
+            return False
+        if self.entry_estado.current() == 0:  # "Seleccione uno"
+            messagebox.showwarning("Advertencia", "Debe seleccionar un estado")
+            return False
+        if not self.entry_nombre.get():
+            messagebox.showwarning("Advertencia", "El nombre es obligatorio")
             return False
         return True
 
@@ -217,12 +230,12 @@ class Frame(tk.Frame):
                 widget.destroy()
         self.lista_p=listar_perros()
         self.tabla = ttk.Treeview(self, columns=('ID_Perro','fecha_ingreso', 'color', 'estado', 'nombre'), height=8)
-        self.tabla.grid(row=4, column=0, columnspan=4, padx=10, pady=10)
         self.tabla.heading('#0', text='ID_Perro', anchor='center')
         self.tabla.heading('#1', text='FECHA INGRESO', anchor='center')
         self.tabla.heading('#2', text='COLOR', anchor='center')
         self.tabla.heading('#3', text='ESTADO', anchor='center')
         self.tabla.heading('#4', text='NOMBRE', anchor='center')
+        self.tabla.grid(row=4, column=0, columnspan=4, padx=10, pady=10, sticky="nsew")
 
         for p in listar_perros():  # Función externa
             self.tabla.insert('', 'end', text=p[0], values=(p[1], p[2], p[3], p[4]))
@@ -232,6 +245,8 @@ class Frame(tk.Frame):
 if __name__ == "__main__":
     root = tk.Tk()
     root.title("Formulario de Perros")
-    root.geometry("600x700")
+    root.geometry("800x600")
+    root.resizable(True, True)
     app = Frame(root)
     root.mainloop()
+    

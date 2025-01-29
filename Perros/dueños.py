@@ -3,7 +3,7 @@ import os
 from tkinter import messagebox, ttk
 from tkcalendar import DateEntry
 from datetime import date
-from modelo.consultas import guardar_dueno,listar_duenos,actualizar_dueno,eliminar_dueno
+from modelo.consultas import listar_duenos,eliminar_dueno
 
 class duenos:
     """Clase que representa un dueno de mascota."""
@@ -297,6 +297,7 @@ class FrameDuenos(tk.Frame):
 if __name__ == "__main__":
     root = tk.Tk()
     root.title("Formulario de duenos")
-    root.geometry("600x700")
+    root.geometry("800x600")
+    root.resizable(True, True)
     app = FrameDuenos(root)
     root.mainloop()

@@ -2,13 +2,15 @@ import sqlite3
 from sqlite3 import Error
 from typing import List, Optional, Tuple
 
+
 class Perros:
-    def __init__(self, nombre: str, raza: str, edad: int, estado_salud: str, id_perro: Optional[int] = None):
+    def __init__(self, nombre: str, color: str, edad: int,estado: str, fecha_ingreso: str =None , id_perro: Optional[int] = None):
         self.id_perro = id_perro
         self.nombre = nombre
-        self.raza = raza
+        self.color = color
         self.edad = edad
-        self.estado_salud = estado_salud
+        self.estado = estado 
+        self.fecha_inicio = fecha_ingreso
 
 class Dueno:
     def __init__(self, nombre_apellido: str, telefono: str, fecha_adopcion: str, email: str, id_perro: int, id_dueno: Optional[int] = None):
@@ -82,7 +84,7 @@ def listar_perros(conn) -> List[Tuple[int, str, str, int, str]]:
     """Lista todos los perros de la base de datos."""
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id_perro, nombre, raza, edad, estado_salud 
+        SELECT id_perro, nombre, raza, edad, estado
         FROM perros
         ORDER BY nombre
     """)
@@ -177,10 +179,12 @@ def crear_tablas(conn):
         CREATE TABLE IF NOT EXISTS perros (
             id_perro INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT NOT NULL,
-            raza TEXT NOT NULL,
+            color TEXT NOT NULL,
             edad INTEGER NOT NULL,
-            estado_salud TEXT NOT NULL
+            estado TEXT NOT NULL
+            fecha_ingreso DATE
         );
+        
     """)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS dueños (

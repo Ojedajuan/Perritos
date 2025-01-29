@@ -35,7 +35,8 @@ def crear_tabla():
             
             # Create tables
             sql = """
-            CREATE TABLE IF NOT EXISTS perros (
+            CREATE TABLE IF NOT EXISTS 
+              (
                 id_perro INTEGER PRIMARY KEY AUTOINCREMENT,
                 nombre TEXT NOT NULL,
                 raza TEXT NOT NULL,

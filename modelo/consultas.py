@@ -1,16 +1,17 @@
 import sqlite3
 from sqlite3 import Error
-from typing import List, Optional, Tuple
+from typing import List,Tuple, Optional
+from modelo.conecciodb import ConeccioDB
+
 
 
 class Perros:
-    def __init__(self, nombre: str, color: str, edad: int,estado: str, fecha_ingreso: str =None , id_perro: Optional[int] = None):
+    def __init__(self, nombre: str, color: str,estado: str, fecha_ingreso: str =None , id_perro: Optional[int] = None):
         self.id_perro = id_perro
         self.nombre = nombre
         self.color = color
-        self.edad = edad
         self.estado = estado 
-        self.fecha_inicio = fecha_ingreso
+        self.fecha_ingreso = fecha_ingreso
 
 class Dueno:
     def __init__(self, nombre_apellido: str, telefono: str, fecha_adopcion: str, email: str, id_perro: int, id_dueno: Optional[int] = None):
@@ -25,43 +26,37 @@ def crear_conexion():
     """Crea una conexión a la base de datos SQLite."""
     try:
         conn = sqlite3.connect('perritos.db')
-        conn.execute("PRAGMA foreing_keys= 1")  # Habilitar claves foráneas
+        conn.execute("PRAGMA foreign_keys= 1")  # Habilitar claves foráneas
         return conn
     except Error as e:
         print(f"Error al conectar a la base de datos: {e}")
         return None
 
 def db_connection(func):
-    """Decorador para manejar conexiones a la base de datos."""
+    """Decorador que maneja la conexión a la base de datos."""
     def wrapper(*args, **kwargs):
-        conn = crear_conexion()
+        conn = ConeccioDB().connect()
         if not conn:
-            print("No se pudo establecer la conexión con la base de datos.")
-            return None
+            print("❌ No se pudo conectar a la base de datos.")
+            return []
         try:
             result = func(conn, *args, **kwargs)
             conn.commit()
             return result
-        except Error as e:
-            print(f"Error en la operación de la base de datos: {e}")
-            return None
+        except sqlite3.Error as e:
+            print(f"❌ Error en la base de datos: {e}")
+            return []	
         finally:
             conn.close()
     return wrapper
 
 def validar_perro(perro: Perros) -> bool:
     """Valida los datos de un objeto Perros."""
-    if perro.edad < 0:
-        print("La edad no puede ser negativa.")
-        return False
     if not perro.nombre.strip():
         print("El nombre no puede estar vacío.")
         return False
-    if not perro.raza.strip():
-        print("La raza no puede estar vacía.")
-        return False
-    if not perro.estado_salud.strip():
-        print("El estado de salud no puede estar vacío.")
+    if not perro.estado.strip():
+        print("El estado no puede estar vacío.")
         return False
     return True
 
@@ -80,40 +75,58 @@ def validar_dueno(dueno: Dueno) -> bool:
 
 # Funciones para perros
 @db_connection
-def listar_perros(conn) -> List[Tuple[int, str, str, int, str]]:
+def listar_perros(conn) -> List[Tuple]:
     """Lista todos los perros de la base de datos."""
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id_perro, nombre, raza, edad, estado
+        SELECT id_perro,color, nombre, estado, fecha_ingreso
         FROM perros
         ORDER BY nombre
     """)
     return cursor.fetchall()
 
 @db_connection
-def guardar_perros(conn, perro: Perros) -> bool:
-    """Guarda un nuevo perro en la base de datos."""
-    if not validar_perro(perro):
+def guardar_perros(conn, perro: Perros = None, nombre: str = None, color: str = "Desconocido", estado: str = "Disponible", fecha_ingreso: str = "2024-01-01")-> bool:
+    """Guarda un perro en la base de datos, permitiendo recibir un objeto Perros o valores individuales."""
+    
+    # Si se pasa un objeto Perros, extraer los valores
+    if perro:
+        nombre = perro.nombre
+        color = perro.color
+        estado = perro.estado
+        fecha_ingreso = perro.fecha_ingreso if perro.fecha_ingreso else "2024-01-01"
+
+    # Definir estados válidos
+    estados_validos = {"Disponible", "Adoptado", "No adoptado"}
+
+    # Normalización de entradas
+    # No aplicar strip() a id_perro ya que es un entero
+    nombre = nombre.strip() if nombre else ""
+    color = color.strip().capitalize() if color else "Desconocido"
+    estado = estado.strip().capitalize() if estado else "Disponible"
+    fecha_ingreso = fecha_ingreso.strip() if fecha_ingreso else "2024-01-01"
+
+    # Corrección de estados
+    if estado == "No Adoptado":
+        estado = "No adoptado"
+
+    # Validar estado
+    if estado not in estados_validos:
+        print(f"❌ Error: '{estado}' no es un estado válido. Estados permitidos: {estados_validos}")
+        return False  
+    if not nombre:
+        print("❌ Error: El nombre no puede estar vacío")
         return False
+    # Ejecutar la inserción
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO perros (nombre, raza, edad, estado_salud)
+        INSERT INTO Perros (NOMBRE, COLOR, ESTADO, FECHA_INGRESO) 
         VALUES (?, ?, ?, ?)
-    """, (perro.nombre, perro.raza, perro.edad, perro.estado_salud))
+    """, (nombre, color, estado, fecha_ingreso))
+
+    print("✅ Perro guardado correctamente.")
     return True
 
-@db_connection
-def actualizar_perro(conn, perro: Perros) -> bool:
-    """Actualiza los datos de un perro existente."""
-    if not validar_perro(perro):
-        return False
-    cursor = conn.cursor()
-    cursor.execute("""
-        UPDATE perros 
-        SET nombre = ?, raza = ?, edad = ?, estado_salud = ?
-        WHERE id_perro = ?
-    """, (perro.nombre, perro.raza, perro.edad, perro.estado_salud, perro.id_perro))
-    return cursor.rowcount > 0
 
 @db_connection
 def eliminar_perro(conn, id_perro: int) -> bool:
@@ -171,33 +184,48 @@ def eliminar_dueno(conn, id_dueno: int) -> bool:
     return cursor.rowcount > 0
 
 # Crear tablas
-@db_connection
-def crear_tablas(conn):
-    """Crea las tablas de la base de datos si no existen."""
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS perros (
-            id_perro INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT NOT NULL,
-            color TEXT NOT NULL,
-            edad INTEGER NOT NULL,
-            estado TEXT NOT NULL
-            fecha_ingreso DATE
-        );
-        
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS dueños (
-            id_dueno INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre_apellido TEXT NOT NULL,
-            telefono TEXT NOT NULL,
-            fecha_adopcion DATE NOT NULL,
-            email TEXT NOT NULL,
-            id_perro INTEGER NOT NULL,
-            FOREIGN KEY (id_perro) REFERENCES perros(id_perro)
-        );
-    """)
-    print("Tablas creadas exitosamente.")
+def crear_tablas():
+    """Crea las tablas en la base de datos."""
+    try:
+        conn = ConeccioDB()
+        connection = conn.connect()
 
-# Ejecutar creación de tablas al cargar el módulo
-crear_tablas()
+        if connection:
+            cursor = connection.cursor()
+
+            cursor.executescript("""
+                DROP TABLE IF EXISTS Dueños;
+                DROP TABLE IF EXISTS Perros;
+            """)
+
+            sql_script = """
+            CREATE TABLE IF NOT EXISTS DUEÑOS (
+                ID_DUEÑO INTEGER PRIMARY KEY AUTOINCREMENT,
+                NOMBRE_APELLIDO TEXT NOT NULL,
+                TELEFONO TEXT NOT NULL,
+                FECHA_ADOPCION TEXT NOT NULL,
+                EMAIL TEXT NOT NULL,
+                ID_PERRO INTEGER,
+                FOREIGN KEY (ID_PERRO) REFERENCES PERROS (ID_PERRO)
+                    ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS PERROS (
+                ID_PERRO INTEGER PRIMARY KEY AUTOINCREMENT,
+                FECHA_INGRESO TEXT NOT NULL,
+                COLOR TEXT NOT NULL,
+                ESTADO TEXT NOT NULL DEFAULT 'Disponible' 
+                    CHECK (ESTADO IN ('Adoptado', 'No adoptado', 'Disponible')),
+                NOMBRE TEXT NOT NULL
+            );
+            """
+
+            cursor.executescript(sql_script)  # Permite ejecutar varias sentencias SQL
+            connection.commit()
+            print("✅ Tablas creadas correctamente")
+            conn.close()
+            return True
+
+    except Exception as e:
+        print(f"❌ Error creando las tablas: {e}")
+        return False

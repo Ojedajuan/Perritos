@@ -3,7 +3,6 @@ import os
 from tkinter import messagebox, ttk
 from tkcalendar import DateEntry
 from datetime import date
-from modelo.consultas import listar_duenos,eliminar_dueno
 
 class duenos:
     """Clase que representa un dueno de mascota."""

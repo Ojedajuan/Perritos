@@ -1,47 +1,131 @@
-# conecciodb.py
 import sqlite3
 import os
+from typing import Optional, Generator
+from contextlib import contextmanager
 
 class ConeccioDB:
-    def __init__(self):
-        self.base_dir = os.path.dirname(os.path.dirname(__file__))
-        self.db_path = os.path.join(self.base_dir, 'data', 'dogs_database.db.sql')
-        self.connection = None
-
-    def connect(self):
+    """A class to manage SQLite database connections with safety features and context management."""
+    
+    def __init__(self, db_name: str = 'dogs_database.db', data_dir: str = 'data'):
+        """
+        Initialize database connection manager.
+        
+        Args:
+            db_name (str): Name of the database file
+            data_dir (str): Directory where the database file will be stored
+        """
+        self.base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.data_dir = data_dir
+        self.db_path = os.path.join(self.base_dir, self.data_dir, db_name)
+        self.connection: Optional[sqlite3.Connection] = None
+        
+    def connect(self) -> Optional[sqlite3.Connection]:
+        """
+        Establish a connection to the SQLite database.
+        
+        Returns:
+            Optional[sqlite3.Connection]: Database connection object if successful, None otherwise
+        """
         try:
-            print(f"Attempting to connect to database at: {self.db_path}")
+            # Ensure the data directory exists
+            os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+            
+            # Create and configure connection
             self.connection = sqlite3.connect(self.db_path)
-            print(f"Database connection established successfully to {self.db_path}")
+            self.connection.execute("PRAGMA foreign_keys = ON;")
+            
+            # Set row factory to use dictionary cursor
+            self.connection.row_factory = sqlite3.Row
+            
             return self.connection
+            
+        except sqlite3.Error as e:
+            print(f"SQLite error occurred: {e}")
+            return None
+        except OSError as e:
+            print(f"OS error occurred: {e}")
+            return None
         except Exception as e:
-            print(f"Error connecting to database: {e}")
+            print(f"Unexpected error occurred: {e}")
             return None
     
-    def close(self):
-        if self.connection:
-            self.connection.close()
-            print("Database connection closed.")
+    def close(self) -> None:
+        """Safely close the database connection."""
+        try:
+            if self.connection:
+                self.connection.close()
+                self.connection = None
+        except Exception as e:
+            print(f"Error closing database connection: {e}")
+    
+    @contextmanager
+    def get_connection(self) -> Generator[Optional[sqlite3.Connection], None, None]:
+        """
+        Context manager for database connections.
+        
+        Yields:
+            Optional[sqlite3.Connection]: Database connection object
+        
+        Usage:
+            with db.get_connection() as conn:
+                # Use the connection here
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM table")
+        """
+        try:
+            conn = self.connect()
+            yield conn
+        finally:
+            self.close()
+    
+    @property
+    def is_connected(self) -> bool:
+        """Check if there is an active database connection."""
+        return self.connection is not None
+    
+    def execute_query(self, query: str, parameters: tuple = ()) -> Optional[sqlite3.Cursor]:
+        """
+        Execute a SQL query safely.
+        
+        Args:
+            query (str): SQL query to execute
+            parameters (tuple): Query parameters to prevent SQL injection
+            
+        Returns:
+            Optional[sqlite3.Cursor]: Cursor object if successful, None otherwise
+        """
+        try:
+            if not self.connection:
+                self.connect()
+            if self.connection:
+                cursor = self.connection.cursor()
+                cursor.execute(query, parameters)
+                return cursor
+        except sqlite3.Error as e:
+            print(f"Error executing query: {e}")
+            return None
 
 # consultas.py
 from modelo.conecciodb import ConeccioDB
 
-def crear_tabla():
+def crear_tablas():
     try:
         conn = ConeccioDB()
         connection = conn.connect()
+        
         if connection:
             cursor = connection.cursor()
             
             # Create tables
             sql = """
-            CREATE TABLE IF NOT EXISTS 
+            CREATE TABLE IF NOT EXISTS perros
               (
                 id_perro INTEGER PRIMARY KEY AUTOINCREMENT,
                 nombre TEXT NOT NULL,
-                raza TEXT NOT NULL,
-                edad INTEGER,
-                estado TEXT NOT NULL
+                fecha_ingreso DATE NOT NULL,
+                color TEXT NOT NULL,
+                ESTADO TEXT NOT NULL DEFAULT 'Disponible' 
+                CHECK (Estado IN ('Adoptado', 'No adoptado', 'No adoptable')),
             );
 
             CREATE TABLE IF NOT EXISTS dueños (
@@ -50,7 +134,6 @@ def crear_tabla():
                 dni TEXT,
                 telefono TEXT NOT NULL,
                 fecha_adopcion DATE NOT NULL,
-                email TEXT NOT NULL,
                 id_perro INTEGER,
                 FOREIGN KEY (id_perro) REFERENCES perros(id_perro)
             );
@@ -134,7 +217,7 @@ def actualizar_dueno(dueno_dict):
                 dueno_dict['fecha_adopcion'],
                 dueno_dict['email'],
                 dueno_dict['id_perro'],
-                dueno_dict['id_dueños']
+                dueno_dict['id_dueño']
             ))
             connection.commit()
             conn.close()

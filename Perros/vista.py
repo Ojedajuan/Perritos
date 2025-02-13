@@ -5,7 +5,7 @@ from tkinter import messagebox, ttk
 from tkcalendar import DateEntry
 from datetime import date
 from modelo.consultas import Perros
-from modelo.consultas import listar_perros, guardar_perros,actualizar_perro, eliminar_perro, crear_tablas
+from modelo.consultas import listar_perros, guardar_perros,listar_perros, eliminar_perro,crear_tablas
 
 class Frame(tk.Frame):
     def __init__(self, root=None):  
@@ -176,7 +176,7 @@ class Frame(tk.Frame):
             
             if self.Id_Perro:
                 perro.id_perros = self.Id_Perro
-                if actualizar_perro(perro):
+                if listar_perros(perro):
                     messagebox.showinfo("Éxito", "Registro actualizado correctamente")
                 else:
                     messagebox.showerror("Error", "No se pudo actualizar el registro")
@@ -231,6 +231,7 @@ class Frame(tk.Frame):
         self.lista_p=listar_perros()
         self.tabla = ttk.Treeview(self, columns=('ID_Perro','fecha_ingreso', 'color', 'estado', 'nombre'), height=8)
         self.tabla.heading('#0', text='ID_Perro', anchor='center')
+        self.tabla.heading('#1', text='NOMBRE', anchor='center')
         self.tabla.heading('#1', text='FECHA INGRESO', anchor='center')
         self.tabla.heading('#2', text='COLOR', anchor='center')
         self.tabla.heading('#3', text='ESTADO', anchor='center')

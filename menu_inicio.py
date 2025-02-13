@@ -1,6 +1,7 @@
 import tkinter as tk
 import os
 from tkinter import messagebox
+from modelo.conecciodb import ConeccioDB
 from modelo.consultas import crear_tablas
 from Perros.dueños import FrameDuenos 
 from Perros.vista import Frame 
@@ -109,8 +110,30 @@ class MenuInicio:
         respuesta = messagebox.askyesno("Confirmar", "¿Está seguro que desea salir?")
         if respuesta:
             self.root.quit()
+def verificar_estructura(tabla):
+    conn = ConeccioDB()
+    connection = conn.connect()
+    cursor = connection.cursor()
+
+    cursor.execute(f"PRAGMA table_info({tabla})")
+    columnas = cursor.fetchall()
+    
+    print(f"📌 Estructura de la tabla '{tabla}':")
+    for columna in columnas:
+        print(columna)
+
+    conn.close()
+
+# Llamar a la función con la tabla que está dando error
+verificar_estructura("Perros")  # O "DUEÑOS", según el error
 
 def main():
+    db = ConeccioDB()
+    connection = db.connect()
+    if connection:
+        print("✅ Base de datos inicializada correctamente")
+    else:
+        print("❌ Error al inicializar la base de datos")
     root = tk.Tk()
     root.title("Menú de Inicio")
     root.geometry("500x400")
